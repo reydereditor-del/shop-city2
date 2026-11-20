@@ -25,12 +25,17 @@ export function Dialog({
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current!;
+    const opener = document.activeElement;
     dialog.showModal();
+    dialog.querySelector<HTMLElement>("[data-initial-focus]")?.focus();
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       dialog.close();
       document.body.style.overflow = overflow;
+      if (opener instanceof HTMLElement && opener.isConnected) {
+        opener.focus({ preventScroll: true });
+      }
     };
   }, []);
   return (

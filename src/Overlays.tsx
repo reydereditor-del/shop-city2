@@ -28,7 +28,7 @@ export function SearchPanel({ close }: { close: () => void }) {
             Search products
           </label>
           <input
-            autoFocus
+            data-initial-focus
             id="search"
             type="search"
             placeholder="Search pieces, colors, categories…"
