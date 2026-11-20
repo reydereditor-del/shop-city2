@@ -1,12 +1,20 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Grid2X2, Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { products } from "./products";
-import { asset, edits, money, shopLink, type Product } from "./store";
+import {
+  asset,
+  archiveEdits,
+  money,
+  shopLink,
+  swatches,
+  garmentPhoto,
+  type Product,
+} from "./store";
 
 export function Logo() {
   return (
     <a href="#/" className="logo" aria-label="Shop City home">
-      <i aria-hidden="true">///</i>SHOPCITY<span>.</span>
+      Shop City
     </a>
   );
 }
@@ -43,6 +51,12 @@ export function Dialog({
       ref={ref}
       className={drawer ? "drawer" : "modal"}
       aria-label={title}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          close();
+        }
+      }}
       onCancel={(e) => {
         e.preventDefault();
         close();
@@ -85,148 +99,170 @@ export function Price({ p }: { p: Product }) {
     </div>
   );
 }
-export function ProductCard({ p, fresh }: { p: Product; fresh?: boolean }) {
-  const [ready, setReady] = useState(false);
+
+export function ProductCard({
+  p,
+  onModel = false,
+}: {
+  p: Product;
+  onModel?: boolean;
+}) {
   return (
     <a className="product-card" href={"#/product/" + p.id}>
-      <div className={"product-photo" + (ready ? "" : " pending")}>
+      <div className="product-photo">
         <img
-          width="600"
-          height="750"
+          key={String(onModel)}
+          width="640"
+          height="800"
           loading="lazy"
           decoding="async"
-          onLoad={() => setReady(true)}
-          src={asset(p.image)}
-          alt={p.name + " in " + p.colors[0]}
+          src={asset(onModel ? p.image : garmentPhoto(p))}
+          alt={
+            p.name +
+            " in " +
+            p.colors[0] +
+            (onModel ? ", on model" : ", garment view")
+          }
         />
-        {p.originalPrice ? (
-          <span className="tag sale-tag">
-            −{Math.round((1 - p.price / p.originalPrice) * 100)}%
-          </span>
-        ) : (
-          fresh && <span className="tag">New</span>
-        )}
-        <span className="card-plus">
-          <Plus size={18} />
-        </span>
       </div>
-      <div className="card-meta">
-        <span>{p.category}</span>
-        <span>
-          {p.colors.length} {p.colors.length === 1 ? "color" : "colors"}
-        </span>
+      <div className="product-caption">
+        <h3>{p.name}</h3>
+        <div className="color-dots" role="img" aria-label={p.colors.join(", ")}>
+          {p.colors.map((c) => (
+            <i key={c} style={{ backgroundColor: swatches[c] }} />
+          ))}
+        </div>
       </div>
-      <h3>{p.name}</h3>
       <Price p={p} />
     </a>
   );
 }
 
-export function Home() {
-  const [frame, setFrame] = useState(0);
-  const edit = edits[frame];
+function CollectionIndex() {
+  const [index, setIndex] = useState(1);
+  const current = archiveEdits[index];
   return (
-    <>
-      <section
-        className="hero"
-        aria-label="Seasonal campaigns"
-        aria-roledescription="carousel"
-      >
-        <img
-          key={"img" + frame}
-          className="hero-image"
-          fetchPriority="high"
-          src={asset("campaign-" + frame + ".webp")}
-          alt={edit.alt}
-        />
-        <div className="hero-shade" />
-        <div className="hero-inner" key={frame} aria-live="polite">
-          <div className="hero-kicker">
-            <span className="red-line" />
-            {edit.label}
-          </div>
-          <h1>
-            {edit.lines[0]}
-            <br />
-            {edit.lines[1]}
-          </h1>
-          <p>{edit.description}</p>
-          <a className="btn light" href={shopLink({ edit: edit.title })}>
+    <section id="collections" className="section collection-index">
+      <div className="collection-list">
+        <p className="micro">Seasonal lookbook</p>
+        <h2>Collections</h2>
+        <div className="collection-tabs" aria-label="Collection previews">
+          {archiveEdits.map((edit, i) => (
+            <button
+              key={edit.title}
+              aria-pressed={i === index}
+              onClick={() => setIndex(i)}
+            >
+              <span>{edit.title}</span>
+              <span aria-hidden="true">{i === index ? "−" : "+"}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <figure className="archive-image">
+        <a
+          href={shopLink({ edit: current.title })}
+          aria-label={"Shop " + current.title}
+        >
+          <img
+            key={index}
+            loading="lazy"
+            src={asset(current.image)}
+            alt={current.alt}
+          />
+        </a>
+        <figcaption>
+          <span>{current.description}</span>
+          <a className="underlink" href={shopLink({ edit: current.title })}>
             Shop the edit
           </a>
+        </figcaption>
+      </figure>
+    </section>
+  );
+}
+
+export function Home() {
+  return (
+    <>
+      <section className="cover" aria-labelledby="campaign-title">
+        <div className="cover-portrait">
+          <img
+            fetchPriority="high"
+            width="1448"
+            height="1086"
+            src={asset("soft-structure.webp")}
+            alt="An oversized sand canvas jacket and wide charcoal trousers in sunlit stone architecture"
+          />
         </div>
-        <div className="hero-foot">
-          <div className="frame-location">
-            <span className="target" aria-hidden="true" /> Tashkent, Uzbekistan
-          </div>
-          <div className="frame-controls">
-            <span className="counter">
-              0{frame + 1} <i>/ 03</i>
-            </span>
-            <button
-              aria-label="Previous campaign"
-              onClick={() => setFrame((frame + 2) % 3)}
-            >
-              <ArrowLeft size={17} />
-            </button>
-            <button
-              aria-label="Next campaign"
-              onClick={() => setFrame((frame + 1) % 3)}
-            >
-              <ArrowRight size={17} />
-            </button>
-          </div>
+        <div className="cover-copy">
+          <span className="micro">Autumn / Winter 2026</span>
+          <h1 id="campaign-title">
+            Soft
+            <br />
+            Structure
+          </h1>
+          <a className="underlink" href={shopLink({ edit: "Soft Structure" })}>
+            Explore the collection
+          </a>
+        </div>
+        <div className="cover-detail">
+          <img
+            src={asset("cotton-study.webp")}
+            width="1200"
+            height="480"
+            alt="Folds and a stitched seam in charcoal cotton twill"
+          />
         </div>
       </section>
-      <section className="section" id="arrivals">
+      <div className="cover-caption">
+        <span>
+          Shop City <i>/</i> Tashkent, Uzbekistan
+        </span>
+        <span>Canvas &amp; cotton twill</span>
+      </div>
+      <section className="section arrivals" id="arrivals">
         <div className="section-title">
-          <div>
-            <div className="eyebrow">
-              <b />
-              Latest drop
-            </div>
-            <h2>New arrivals</h2>
-          </div>
-          <a className="text-link" href={shopLink()}>
-            <Grid2X2 size={14} /> Shop all
+          <h2>New arrivals</h2>
+          <a className="underlink" href={shopLink()}>
+            Shop all pieces
           </a>
         </div>
         <div className="grid">
           {products.slice(0, 4).map((p) => (
-            <ProductCard key={p.id} p={p} fresh />
+            <ProductCard key={p.id} p={p} />
           ))}
         </div>
       </section>
-      <section className="section collections" id="collections">
-        <div className="section-title">
-          <div>
-            <div className="eyebrow">
-              <b />
-              Seasonal selection
-            </div>
-            <h2>The collections</h2>
-          </div>
+      <CollectionIndex />
+      <section className="section sale-strip">
+        <div>
+          <h2>On sale</h2>
+          <p>
+            Selected pieces from{" "}
+            {money(
+              Math.min(
+                ...products.filter((p) => p.originalPrice).map((p) => p.price),
+              ),
+            )}
+            .
+          </p>
         </div>
-        <div className="edit-grid">
-          {edits.slice(1).map((e, i) => (
-            <a
-              href={shopLink({ edit: e.title })}
-              className="edit-tile"
-              key={e.title}
-            >
+        <div className="sale-images" aria-hidden="true">
+          {products
+            .filter((p) => p.originalPrice)
+            .map((p) => (
               <img
                 loading="lazy"
-                src={asset("campaign-" + (i + 1) + ".webp")}
-                alt={e.alt}
+                key={p.id}
+                src={asset(garmentPhoto(p))}
+                alt=""
               />
-              <div>
-                <span>{e.label}</span>
-                <h3>{e.title}</h3>
-                <u>Shop collection</u>
-              </div>
-            </a>
-          ))}
+            ))}
         </div>
+        <a className="underlink" href={shopLink({ sale: "1" })}>
+          View sale
+        </a>
       </section>
     </>
   );

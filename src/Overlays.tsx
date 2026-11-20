@@ -40,7 +40,10 @@ export function SearchPanel({ close }: { close: () => void }) {
           </button>
         </form>
         <p className="eyebrow" role="status">
-          {term.trim() ? matches.length + " matching pieces" : "New arrivals"}
+          {term.trim()
+            ? matches.length +
+              (matches.length === 1 ? " matching piece" : " matching pieces")
+            : "New arrivals"}
         </p>
         <div className="search-list">
           {(term.trim() ? matches : matches.slice(0, 4)).map((p) => (

@@ -1,8 +1,7 @@
 import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Menu, Search, ShoppingBag } from "lucide-react";
-import "@fontsource/barlow-condensed/latin-700.css";
-import "@fontsource/barlow-condensed/latin-800.css";
+import "@fontsource/instrument-serif/latin-400.css";
 import "@fontsource-variable/dm-sans/wght.css";
 import "./style.css";
 import { Home, Logo, Dialog } from "./components";
@@ -132,6 +131,13 @@ function App() {
         Skip to content
       </a>
       <header className="header">
+        <button
+          className="mobile-menu"
+          aria-label="Open navigation"
+          onClick={() => setPanel("menu")}
+        >
+          <Menu size={21} />
+        </button>
         <Logo />
         <nav aria-label="Main navigation">{navigation.map(navLink)}</nav>
         <div className="utilities">
@@ -145,14 +151,7 @@ function App() {
           >
             <ShoppingBag size={18} />
             <span>Bag</span>
-            <b>{count}</b>
-          </button>
-          <button
-            className="menu-toggle"
-            aria-label="Open navigation"
-            onClick={() => setPanel("menu")}
-          >
-            <Menu size={23} />
+            <b>({count})</b>
           </button>
         </div>
       </header>

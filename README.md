@@ -14,6 +14,8 @@ The expected address is https://reydereditor-del.github.io/shop-city2/. Hash-bas
 
 ## Art direction
 
-The *After Hours* campaign pairs night-time street photography with a condensed display face. The catalog follows a four-column desktop grid, switching to two columns on phones. Dazze Studio’s [Nighthawks case study](https://www.dazze.studio/projects/nighthawks-ecommerce/) informed the grid and concise detail pages. [Our Legacy’s collection navigation](https://www.ourlegacy.com/mens/new-arrivals) informed the garment-first filters. All compositions, product names, prices and imagery are original to this demo.
+*Soft Structure* pairs an original sunlit Tashkent fashion portrait with a charcoal cotton study. The campaign leads into eight shoppable silhouettes and a collection index. The earlier black-and-white campaigns remain accessible through the index and their original collection URLs.
 
-Product data is in `src/products.ts`. The studio includes two colorways, full looks and detail crops for each piece. Campaigns and category membership are in `src/store.ts`. The interface respects reduced-motion preferences and uses native dialogs, selects and radio inputs for keyboard access.
+The design draws on the spacious photography and concise navigation of [Entire Studios](https://www.entirestudios.com/) and the [GoodCart reference galleries](https://www.goodcart.design/websites/entire-studios/collection). All photographs in the storefront were generated for Shop City.
+
+The catalog switches between garment-only and on-model photographs. Each primary color includes a garment-only view. Both colors include an on-model view and a closer crop. Prices, sizes and colors are defined by the product data in `src/products.ts` and `src/store.ts`. The bag uses the same storage key as the previous storefront.
