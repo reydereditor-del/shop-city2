@@ -40,11 +40,24 @@ export const readBag = (): CartItem[] => {
   }
 };
 
-export const edits = [
+export const swatches: Record<string, string> = {
+  Black: "#242426",
+  Olive: "#61624b",
+  Bone: "#e9e4d8",
+  Slate: "#686966",
+  Indigo: "#303846",
+  Ash: "#b7b6b2",
+  Sand: "#b5a284",
+  Charcoal: "#4e4d4a",
+  Oxblood: "#682c35",
+};
+
+export const garmentPhoto = (p: Product) => "garment-" + p.id + ".webp";
+
+export const archiveEdits = [
   {
     title: "After Hours",
-    lines: ["AFTER", "HOURS."],
-    label: "Autumn / Winter 2026",
+    image: "campaign-0.webp",
     description:
       "Technical layers and oversized silhouettes, after dark in Tashkent.",
     categories: ["Jackets", "Pants"],
@@ -52,20 +65,28 @@ export const edits = [
   },
   {
     title: "Off Duty",
-    lines: ["OFF", "DUTY."],
-    label: "The essentials edit",
+    image: "campaign-1.webp",
     description: "Easy proportions in washed cotton and wide-leg denim.",
     categories: ["T-shirts", "Pants"],
     alt: "A model wearing an oversized tee and wide denim beneath a city underpass",
   },
   {
     title: "Cold Front",
-    lines: ["COLD", "FRONT."],
-    label: "The layering edit",
+    image: "campaign-2.webp",
     description:
       "Heavy fleece and structured outerwear for colder city mornings.",
     categories: ["Hoodies", "Jackets"],
     alt: "A model in a light hoodie and dark jacket sitting on a concrete ledge",
+  },
+];
+
+export const edits = [
+  ...archiveEdits,
+  {
+    title: "Soft Structure",
+    description: "Loose canvas, wide trousers and easy cotton layers.",
+    categories: ["Jackets", "Pants", "T-shirts"],
+    alt: "Sand and charcoal layers in daylight",
   },
 ];
 export const shopLink = (params: Record<string, string> = {}) => {

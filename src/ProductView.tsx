@@ -2,19 +2,16 @@ import { useState } from "react";
 import { Check, ShoppingBag } from "lucide-react";
 import { Price, ProductCard } from "./components";
 import { products } from "./products";
-import { asset, shopLink, sizes, type CartItem, type Product } from "./store";
+import {
+  asset,
+  garmentPhoto,
+  shopLink,
+  sizes,
+  swatches,
+  type CartItem,
+  type Product,
+} from "./store";
 
-const swatches: Record<string, string> = {
-  Black: "#242426",
-  Olive: "#61624b",
-  Bone: "#e9e4d8",
-  Slate: "#686966",
-  Indigo: "#303846",
-  Ash: "#b7b6b2",
-  Sand: "#b5a284",
-  Charcoal: "#4e4d4a",
-  Oxblood: "#682c35",
-};
 export const variantPhoto = (p: Product, color: string, detail = false) =>
   color === p.colors[0]
     ? detail
@@ -30,7 +27,15 @@ export function ProductView({
 }) {
   const [color, setColor] = useState(p.colors[0]);
   const [size, setSize] = useState("");
-  const [photo, setPhoto] = useState(0);
+  const [photo, setPhoto] = useState("On model");
+  const views = [
+    { label: "On model", file: variantPhoto(p, color) },
+    ...(color === p.colors[0]
+      ? [{ label: "Garment", file: garmentPhoto(p) }]
+      : []),
+    { label: "Fabric detail", file: variantPhoto(p, color, true) },
+  ];
+  const selected = views.find((v) => v.label === photo) || views[0];
   const [error, setError] = useState(false);
   return (
     <section className="section product-view">
@@ -40,35 +45,31 @@ export function ProductView({
       </div>
       <div className="pdp">
         <div className="gallery">
-          <div className="main-photo">
+          <figure className="main-photo">
             <img
-              src={asset(variantPhoto(p, color, photo === 1))}
+              key={selected.file}
+              src={asset(selected.file)}
               alt={
-                p.name +
-                " in " +
-                color +
-                (photo === 1 ? ", fabric detail" : ", on model")
+                p.name + " in " + color + ", " + selected.label.toLowerCase()
               }
             />
-          </div>
+          </figure>
           <div className="thumbs" aria-label="Product gallery">
-            {["On model", "Fabric detail"].map((label, i) => (
+            {views.map((v) => (
               <button
-                key={label}
-                aria-label={label}
-                aria-pressed={i === photo}
-                onClick={() => setPhoto(i)}
+                key={v.label}
+                aria-label={v.label}
+                aria-pressed={v.label === selected.label}
+                onClick={() => setPhoto(v.label)}
               >
-                <img alt="" src={asset(variantPhoto(p, color, i === 1))} />
+                <img src={asset(v.file)} alt="" />
+                <span>{v.label}</span>
               </button>
             ))}
           </div>
         </div>
         <div className="product-info">
-          <div className="eyebrow">
-            <b />
-            {p.category}
-          </div>
+          <div className="micro">{p.category}</div>
           <h1>{p.name}</h1>
           <Price p={p} />
           <p>{p.description}</p>
@@ -85,7 +86,11 @@ export function ProductView({
                     value={c}
                     aria-label={c}
                     checked={color === c}
-                    onChange={() => setColor(c)}
+                    onChange={() => {
+                      setColor(c);
+                      if (photo === "Garment" && c !== p.colors[0])
+                        setPhoto("On model");
+                    }}
                   />
                   <span style={{ background: swatches[c] }}>
                     {color === c && (
@@ -140,8 +145,7 @@ export function ProductView({
               }
             }}
           >
-            <ShoppingBag size={17} />
-            Add to bag
+            Add to bag <ShoppingBag size={17} />
           </button>
           <small className="demo-note">
             Demo store · Sample products and prices

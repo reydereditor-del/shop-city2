@@ -10,6 +10,7 @@ export function Catalog({ params }: { params: URLSearchParams }) {
   const query = params.get("q")?.trim().toLowerCase() || "";
   const band = params.get("price") || "";
   const order = params.get("sort") || "";
+  const onModel = params.get("view") === "model";
   const base = Object.fromEntries(params);
   const update = (name: string, value: string) => {
     location.hash = shopLink({ ...base, [name]: value });
@@ -46,10 +47,6 @@ export function Catalog({ params }: { params: URLSearchParams }) {
         <a href="#/">Home</a> / {title}
       </div>
       <div className="catalog-title">
-        <div className="eyebrow">
-          <b />
-          {edit ? "Featured collection" : "Shop City catalog"}
-        </div>
         <h1>{title}</h1>
         {edit && <p>{edit.description}</p>}
       </div>
@@ -92,21 +89,35 @@ export function Catalog({ params }: { params: URLSearchParams }) {
           </label>
         </div>
       </div>
-      <div className="results" role="status">
-        <span>
-          {displayed.length} {displayed.length === 1 ? "piece" : "pieces"}
-          {query && <> matching “{params.get("q")}”</>}
-        </span>
-        {(category || band || query || order) && (
-          <a href={reset}>
-            Clear filters <X size={12} />
-          </a>
-        )}
+      <div className="catalog-meta">
+        <div className="results" role="status">
+          <span>
+            {displayed.length} {displayed.length === 1 ? "piece" : "pieces"}
+            {query && <> matching “{params.get("q")}”</>}
+          </span>
+          {(category || band || query || order) && (
+            <a href={reset}>
+              Clear filters <X size={12} />
+            </a>
+          )}
+        </div>
+        <div className="view-switch" aria-label="Product photography">
+          <button aria-pressed={!onModel} onClick={() => update("view", "")}>
+            Garment
+          </button>
+          <span>/</span>
+          <button
+            aria-pressed={onModel}
+            onClick={() => update("view", "model")}
+          >
+            On model
+          </button>
+        </div>
       </div>
       {displayed.length ? (
         <div className="grid">
           {displayed.map((p) => (
-            <ProductCard key={p.id} p={p} fresh={products.indexOf(p) < 4} />
+            <ProductCard key={p.id} p={p} onModel={onModel} />
           ))}
         </div>
       ) : (
