@@ -1,9 +1,17 @@
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { products } from "./products";
-import { categories, edits, shopLink } from "./store";
+import { useProducts } from "./CatalogSource";
+import { edits, shopLink } from "./store";
 import { ProductCard } from "./components";
 
 export function Catalog({ params }: { params: URLSearchParams }) {
+  const products = useProducts();
+  const categories = [
+    ...new Set(
+      [...products]
+        .sort((a, b) => a.categoryPosition - b.categoryPosition)
+        .map((p) => p.category),
+    ),
+  ];
   const edit = edits.find((e) => e.title === params.get("edit"));
   const sale = params.get("sale") === "1";
   const category = params.get("category") || "";
@@ -126,11 +134,19 @@ export function Catalog({ params }: { params: URLSearchParams }) {
       ) : (
         <div className="empty">
           <Search />
-          <h2>No pieces found</h2>
-          <p>Try another search or clear your filters.</p>
-          <a className="btn dark" href={reset}>
-            Reset filters
-          </a>
+          <h2>
+            {products.length ? "No pieces found" : "The collection is empty"}
+          </h2>
+          <p>
+            {products.length
+              ? "Try another search or clear your filters."
+              : "New pieces will appear here when published."}
+          </p>
+          {products.length > 0 && (
+            <a className="btn dark" href={reset}>
+              Reset filters
+            </a>
+          )}
         </div>
       )}
     </section>

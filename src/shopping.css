@@ -332,6 +332,15 @@ legend span {
   color: white;
   background: var(--ink);
 }
+.sizes input:disabled + span {
+  opacity: 0.45;
+  text-decoration: line-through;
+  cursor: default;
+}
+.add:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
 .sizes input:focus-visible + span,
 .swatches input:focus-visible + span {
   outline: 2px solid #424f6b;

@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { lazy, Suspense, useSyncExternalStore } from "react";
 import { X } from "lucide-react";
-import { products } from "./products";
+import { useProducts } from "./CatalogSource";
 import {
   asset,
   archiveEdits,
   money,
   shopLink,
-  swatches,
   garmentPhoto,
   type Product,
 } from "./store";
@@ -121,6 +120,7 @@ export function ProductCard({
 }) {
   const [requestPreview, setRequestPreview] = useState(false);
   const [loadedPreview, setLoadedPreview] = useState("");
+  const primary = onModel ? p.image : garmentPhoto(p);
   const preview = onModel ? p.detail : p.image;
   return (
     <a
@@ -140,15 +140,19 @@ export function ProductCard({
           height="800"
           loading="lazy"
           decoding="async"
-          src={asset(onModel ? p.image : garmentPhoto(p))}
+          src={asset(primary)}
           alt={
             p.name +
             " in " +
             p.colors[0] +
-            (onModel ? ", on model" : ", garment view")
+            (primary === p.colorways[0].images.model
+              ? ", on model"
+              : primary === p.colorways[0].images.garment
+                ? ", garment view"
+                : ", fabric detail")
           }
         />
-        {requestPreview && (
+        {requestPreview && primary !== preview && (
           <img
             key={preview}
             className={
@@ -165,7 +169,12 @@ export function ProductCard({
         <h3>{p.name}</h3>
         <div className="color-dots" role="img" aria-label={p.colors.join(", ")}>
           {p.colors.map((c) => (
-            <i key={c} style={{ backgroundColor: swatches[c] }} />
+            <i
+              key={c}
+              style={{
+                backgroundColor: p.colorways.find((w) => w.name === c)?.hex,
+              }}
+            />
           ))}
         </div>
       </div>
@@ -266,6 +275,8 @@ function CollectionIndex() {
 }
 
 export function Home() {
+  const products = useProducts();
+  const sale = products.filter((p) => p.originalPrice);
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const motion = useSyncExternalStore(
     subscribeToMotion,
@@ -320,6 +331,7 @@ export function Home() {
             Shop all pieces
           </a>
         </div>
+        {!products.length && <p>No pieces have been published yet.</p>}
         <div className="grid">
           {products.slice(0, 4).map((p) => (
             <ProductCard key={p.id} p={p} />
@@ -327,23 +339,17 @@ export function Home() {
         </div>
       </section>
       <CollectionIndex />
-      <section className="section sale-strip">
-        <div>
-          <h2>On sale</h2>
-          <p>
-            Selected pieces from{" "}
-            {money(
-              Math.min(
-                ...products.filter((p) => p.originalPrice).map((p) => p.price),
-              ),
-            )}
-            .
-          </p>
-        </div>
-        <div className="sale-images" aria-hidden="true">
-          {products
-            .filter((p) => p.originalPrice)
-            .map((p) => (
+      {sale.length > 0 && (
+        <section className="section sale-strip">
+          <div>
+            <h2>On sale</h2>
+            <p>
+              Selected pieces from{" "}
+              {money(Math.min(...sale.map((p) => p.price)))}.
+            </p>
+          </div>
+          <div className="sale-images" aria-hidden="true">
+            {sale.map((p) => (
               <img
                 loading="lazy"
                 key={p.id}
@@ -351,11 +357,12 @@ export function Home() {
                 alt=""
               />
             ))}
-        </div>
-        <a className="underlink" href={shopLink({ sale: "1" })}>
-          View sale
-        </a>
-      </section>
+          </div>
+          <a className="underlink" href={shopLink({ sale: "1" })}>
+            View sale
+          </a>
+        </section>
+      )}
     </div>
   );
 }

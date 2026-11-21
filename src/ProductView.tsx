@@ -1,23 +1,9 @@
 import { useEffect, useState } from "react";
 import { Check, ShoppingBag } from "lucide-react";
 import { Price, ProductCard } from "./components";
-import { products } from "./products";
-import {
-  asset,
-  garmentPhoto,
-  shopLink,
-  sizes,
-  swatches,
-  type CartItem,
-  type Product,
-} from "./store";
+import { useProducts, demoMode } from "./CatalogSource";
+import { asset, shopLink, type CartItem, type Product } from "./store";
 
-export const variantPhoto = (p: Product, color: string, detail = false) =>
-  color === p.colors[0]
-    ? detail
-      ? p.detail
-      : p.image
-    : "product-" + p.id + "-alt" + (detail ? "-detail" : "") + ".webp";
 function GalleryPhoto({
   file,
   description,
@@ -61,16 +47,17 @@ export function ProductView({
   p: Product;
   add: (item: CartItem) => void;
 }) {
+  const products = useProducts();
   const [color, setColor] = useState(p.colors[0]);
   const [size, setSize] = useState("");
   const [photo, setPhoto] = useState("On model");
+  const selectedColor = p.colorways.find((w) => w.name === color)!;
   const views = [
-    { label: "On model", file: variantPhoto(p, color) },
-    ...(color === p.colors[0]
-      ? [{ label: "Garment", file: garmentPhoto(p) }]
-      : []),
-    { label: "Fabric detail", file: variantPhoto(p, color, true) },
-  ];
+    { label: "On model", file: selectedColor.images.model },
+    { label: "Garment", file: selectedColor.images.garment },
+    { label: "Fabric detail", file: selectedColor.images.detail },
+  ].filter((v): v is { label: string; file: string } => Boolean(v.file));
+  const available = selectedColor.variants.some((v) => v.stock > 0);
   const selected = views.find((v) => v.label === photo) || views[0];
   const [error, setError] = useState(false);
   return (
@@ -123,11 +110,19 @@ export function ProductView({
                     checked={color === c}
                     onChange={() => {
                       setColor(c);
-                      if (photo === "Garment" && c !== p.colors[0])
-                        setPhoto("On model");
+                      if (
+                        !p.colorways
+                          .find((w) => w.name === c)
+                          ?.variants.some((v) => v.size === size && v.stock > 0)
+                      )
+                        setSize("");
                     }}
                   />
-                  <span style={{ background: swatches[c] }}>
+                  <span
+                    style={{
+                      background: p.colorways.find((w) => w.name === c)?.hex,
+                    }}
+                  >
                     {color === c && (
                       <Check
                         size={15}
@@ -146,11 +141,12 @@ export function ProductView({
               Size <span>/ {size || "Select a size"}</span>
             </legend>
             <div className="sizes">
-              {sizes.map((s) => (
+              {selectedColor.variants.map(({ size: s, stock }) => (
                 <label key={s}>
                   <input
                     type="radio"
                     name="size"
+                    disabled={stock === 0}
                     value={s}
                     checked={size === s}
                     onChange={() => {
@@ -170,20 +166,23 @@ export function ProductView({
           )}
           <button
             className="btn dark add"
+            disabled={!available}
             onClick={() => {
               if (size) add({ id: p.id, color, size, qty: 1 });
               else {
                 setError(true);
                 document
-                  .querySelector<HTMLInputElement>("input[name=size]")
+                  .querySelector<HTMLInputElement>("input[name=size]:enabled")
                   ?.focus();
               }
             }}
           >
-            Add to bag <ShoppingBag size={17} />
+            {available ? "Add to bag" : "Sold out"} <ShoppingBag size={17} />
           </button>
           <small className="demo-note">
-            Demo store · Sample products and prices
+            {demoMode
+              ? "Demo store · Sample products and prices"
+              : "Catalog preview · Checkout unavailable"}
           </small>
         </div>
       </div>
