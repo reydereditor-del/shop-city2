@@ -11,9 +11,12 @@ export function Catalog({ params }: { params: URLSearchParams }) {
   const band = params.get("price") || "";
   const order = params.get("sort") || "";
   const onModel = params.get("view") === "model";
-  const base = Object.fromEntries(params);
+
   const update = (name: string, value: string) => {
-    location.hash = shopLink({ ...base, [name]: value });
+    // Consecutive controls can change before the hashchange rerender. Preserve the latest URL selection.
+    const query = location.hash.split("?")[1] ?? "";
+    const current = Object.fromEntries(new URLSearchParams(query));
+    location.hash = shopLink({ ...current, [name]: value });
   };
   const displayed = products.filter(
     (p) =>

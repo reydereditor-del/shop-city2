@@ -21,6 +21,7 @@ function App() {
   const [route, setRoute] = useState(location.hash.slice(1) || "/");
   const [panel, setPanel] = useState<null | "bag" | "menu" | "search">(null);
   const [items, setItems] = useState<CartItem[]>(readBag);
+  const [addedKey, setAddedKey] = useState<string | null>(null);
   const [saveError, setSaveError] = useState(false);
   const [path, search = ""] = route.split("?");
   const params = new URLSearchParams(search);
@@ -95,6 +96,7 @@ function App() {
           )
         : [...items, item],
     );
+    setAddedKey(key);
     setPanel("bag");
   }
   const count = items.reduce((n, i) => n + i.qty, 0);
@@ -146,7 +148,10 @@ function App() {
             <span>Search</span>
           </button>
           <button
-            onClick={() => setPanel("bag")}
+            onClick={() => {
+              setAddedKey(null);
+              setPanel("bag");
+            }}
             aria-label={"Shopping bag, " + count + " items"}
           >
             <ShoppingBag size={18} />
@@ -199,14 +204,16 @@ function App() {
       {panel === "bag" && (
         <BagPanel
           items={items}
+          addedKey={addedKey}
           close={() => setPanel(null)}
-          change={(key, n) =>
+          change={(key, n) => {
+            setAddedKey(null);
             save(
               items.flatMap((i) =>
                 itemKey(i) !== key ? [i] : n > 0 ? [{ ...i, qty: n }] : [],
               ),
-            )
-          }
+            );
+          }}
         />
       )}
     </>

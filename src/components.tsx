@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useSyncExternalStore } from "react";
 import { X } from "lucide-react";
 import { products } from "./products";
 import {
@@ -10,6 +11,17 @@ import {
   garmentPhoto,
   type Product,
 } from "./store";
+
+const EditorialMotion = lazy(() =>
+  import("./EditorialMotion").catch(() => ({ default: () => null })),
+);
+const desktopMotion = matchMedia(
+  "(min-width: 881px) and (prefers-reduced-motion: no-preference)",
+);
+function subscribeToMotion(listener: () => void) {
+  desktopMotion.addEventListener("change", listener);
+  return () => desktopMotion.removeEventListener("change", listener);
+}
 
 export function Logo() {
   return (
@@ -107,8 +119,20 @@ export function ProductCard({
   p: Product;
   onModel?: boolean;
 }) {
+  const [requestPreview, setRequestPreview] = useState(false);
+  const [loadedPreview, setLoadedPreview] = useState("");
+  const preview = onModel ? p.detail : p.image;
   return (
-    <a className="product-card" href={"#/product/" + p.id}>
+    <a
+      className="product-card"
+      href={"#/product/" + p.id}
+      onPointerEnter={(e) => {
+        if (e.pointerType === "mouse") setRequestPreview(true);
+      }}
+      onFocus={(e) => {
+        if (e.currentTarget.matches(":focus-visible")) setRequestPreview(true);
+      }}
+    >
       <div className="product-photo">
         <img
           key={String(onModel)}
@@ -124,6 +148,18 @@ export function ProductCard({
             (onModel ? ", on model" : ", garment view")
           }
         />
+        {requestPreview && (
+          <img
+            key={preview}
+            className={
+              "card-preview" + (loadedPreview === preview ? " ready" : "")
+            }
+            src={asset(preview)}
+            alt=""
+            decoding="async"
+            onLoad={() => setLoadedPreview(preview)}
+          />
+        )}
       </div>
       <div className="product-caption">
         <h3>{p.name}</h3>
@@ -139,52 +175,109 @@ export function ProductCard({
 }
 
 function CollectionIndex() {
-  const [index, setIndex] = useState(1);
-  const current = archiveEdits[index];
+  const [active, setActive] = useState(0);
+  const panels = useRef<(HTMLElement | null)[]>([]);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting)
+            setActive(panels.current.indexOf(entry.target as HTMLElement));
+        }
+      },
+      { rootMargin: "-45% 0px -45% 0px" },
+    );
+    for (const panel of panels.current) if (panel) observer.observe(panel);
+    return () => observer.disconnect();
+  }, []);
+  function goToPanel(index: number) {
+    const panel = panels.current[index];
+    if (!panel) return;
+    panel.focus({ preventScroll: true });
+    panel.scrollIntoView({
+      block: "center",
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
+    setActive(index);
+  }
   return (
     <section id="collections" className="section collection-index">
       <div className="collection-list">
         <p className="micro">Seasonal lookbook</p>
         <h2>Collections</h2>
-        <div className="collection-tabs" aria-label="Collection previews">
+        <div
+          className="collection-tabs"
+          role="group"
+          aria-label="Collection index"
+        >
           {archiveEdits.map((edit, i) => (
             <button
               key={edit.title}
-              aria-pressed={i === index}
-              onClick={() => setIndex(i)}
+              aria-current={active === i ? "location" : undefined}
+              aria-controls={"look-" + i}
+              onClick={() => goToPanel(i)}
             >
               <span>{edit.title}</span>
-              <span aria-hidden="true">{i === index ? "−" : "+"}</span>
+              <span aria-hidden="true">{active === i ? "−" : "+"}</span>
             </button>
           ))}
         </div>
       </div>
-      <figure className="archive-image">
-        <a
-          href={shopLink({ edit: current.title })}
-          aria-label={"Shop " + current.title}
-        >
-          <img
-            key={index}
-            loading="lazy"
-            src={asset(current.image)}
-            alt={current.alt}
-          />
-        </a>
-        <figcaption>
-          <span>{current.description}</span>
-          <a className="underlink" href={shopLink({ edit: current.title })}>
-            Shop the edit
-          </a>
-        </figcaption>
-      </figure>
+      <div className="lookbook-frames">
+        {archiveEdits.map((edit, i) => (
+          <figure
+            key={edit.title}
+            id={"look-" + i}
+            className="archive-image"
+            tabIndex={-1}
+            ref={(el) => {
+              panels.current[i] = el;
+            }}
+            aria-label={edit.title}
+          >
+            <a
+              className="lookbook-photo"
+              href={shopLink({ edit: edit.title })}
+              aria-label={"Shop " + edit.title}
+            >
+              <img loading="lazy" src={asset(edit.image)} alt={edit.alt} />
+              <span className="photo-mask" aria-hidden="true" />
+            </a>
+            <figcaption>
+              <div>
+                <h3>{edit.title}</h3>
+                <span>{edit.description}</span>
+              </div>
+              <a
+                className="underlink"
+                href={shopLink({ edit: edit.title })}
+                aria-label={"Shop the " + edit.title + " edit"}
+              >
+                Shop the edit
+              </a>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
     </section>
   );
 }
 
 export function Home() {
+  const [root, setRoot] = useState<HTMLDivElement | null>(null);
+  const motion = useSyncExternalStore(
+    subscribeToMotion,
+    () => desktopMotion.matches,
+  );
   return (
-    <>
+    <div ref={setRoot}>
+      {motion && root && (
+        <Suspense fallback={null}>
+          <EditorialMotion root={root} />
+        </Suspense>
+      )}
       <section className="cover" aria-labelledby="campaign-title">
         <div className="cover-portrait">
           <img
@@ -198,9 +291,8 @@ export function Home() {
         <div className="cover-copy">
           <span className="micro">Autumn / Winter 2026</span>
           <h1 id="campaign-title">
-            Soft
-            <br />
-            Structure
+            <span className="title-line">Soft</span>{" "}
+            <span className="title-line">Structure</span>
           </h1>
           <a className="underlink" href={shopLink({ edit: "Soft Structure" })}>
             Explore the collection
@@ -264,6 +356,6 @@ export function Home() {
           View sale
         </a>
       </section>
-    </>
+    </div>
   );
 }

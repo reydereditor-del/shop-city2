@@ -65,10 +65,12 @@ export function SearchPanel({ close }: { close: () => void }) {
 }
 export function BagPanel({
   items,
+  addedKey,
   change,
   close,
 }: {
   items: CartItem[];
+  addedKey: string | null;
   change: (key: string, n: number) => void;
   close: () => void;
 }) {
@@ -85,7 +87,17 @@ export function BagPanel({
               const p = products.find((p) => p.id === i.id)!,
                 key = itemKey(i);
               return (
-                <div className="bag-item" key={key}>
+                <div
+                  className={
+                    addedKey === key ? "bag-item just-added" : "bag-item"
+                  }
+                  key={key}
+                >
+                  {addedKey === key && (
+                    <span className="sr" role="status">
+                      {p.name} added to bag.
+                    </span>
+                  )}
                   <a onClick={close} href={"#/product/" + p.id}>
                     <img
                       src={asset(variantPhoto(p, i.color))}
