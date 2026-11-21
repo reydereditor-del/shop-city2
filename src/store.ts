@@ -1,34 +1,34 @@
-import { products } from "./products";
+import { mainImage, type Product } from "./catalog-api";
+export type { Product } from "./catalog-api";
 
 export const asset = (file: string) =>
-  import.meta.env.BASE_URL + "images/" + file;
+  file.startsWith("https://")
+    ? file
+    : import.meta.env.BASE_URL + "images/" + file;
 export const money = (amount: number) =>
   new Intl.NumberFormat("en-US").format(amount) + " UZS";
-export const categories = ["T-shirts", "Pants", "Hoodies", "Jackets"] as const;
-export const sizes = ["S", "M", "L", "XL"] as const;
-export type Product = (typeof products)[number];
 export type CartItem = { id: string; size: string; color: string; qty: number };
 export const storageKey = "shop-city.bag.v1";
 export const itemKey = (item: Omit<CartItem, "qty">) =>
-  [item.id, item.color, item.size].join("/");
+  JSON.stringify([item.id, item.color, item.size]);
 export const readBag = (): CartItem[] => {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(storageKey) || "[]");
     if (!Array.isArray(saved)) return [];
     const bag = new Map<string, CartItem>();
     for (const item of saved) {
-      const p = item && products.find((product) => product.id === item.id);
       if (
-        !p ||
-        !p.colors.includes(item.color) ||
-        !(sizes as readonly string[]).includes(item.size) ||
+        !item ||
+        typeof item.id !== "string" ||
+        typeof item.color !== "string" ||
+        typeof item.size !== "string" ||
         !Number.isInteger(item.qty) ||
         item.qty < 1
       )
         continue;
       const key = itemKey(item);
       bag.set(key, {
-        id: p.id,
+        id: item.id,
         size: item.size,
         color: item.color,
         qty: Math.min(99, item.qty + (bag.get(key)?.qty ?? 0)),
@@ -40,19 +40,20 @@ export const readBag = (): CartItem[] => {
   }
 };
 
-export const swatches: Record<string, string> = {
-  Black: "#242426",
-  Olive: "#61624b",
-  Bone: "#e9e4d8",
-  Slate: "#686966",
-  Indigo: "#303846",
-  Ash: "#b7b6b2",
-  Sand: "#b5a284",
-  Charcoal: "#4e4d4a",
-  Oxblood: "#682c35",
-};
-
-export const garmentPhoto = (p: Product) => "garment-" + p.id + ".webp";
+export const garmentPhoto = (p: Product) =>
+  p.colorways[0].images.garment ?? p.image;
+export const variantPhoto = (p: Product, color: string) =>
+  mainImage(p.colorways.find((w) => w.name === color) ?? p.colorways[0]);
+export const stockLimit = (
+  p: Product | undefined,
+  item: Omit<CartItem, "qty">,
+) =>
+  Math.min(
+    99,
+    p?.colorways
+      .find((w) => w.name === item.color)
+      ?.variants.find((v) => v.size === item.size)?.stock ?? 0,
+  );
 
 export const archiveEdits = [
   {

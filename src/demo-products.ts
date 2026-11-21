@@ -1,18 +1,4 @@
-export type Category = "T-shirts" | "Pants" | "Hoodies" | "Jackets";
-
-export interface Product {
-  id: string;
-  name: string;
-  category: Category;
-  price: number;
-  originalPrice?: number;
-  colors: string[];
-  description: string;
-  image: string;
-  detail: string;
-}
-
-export const products: Product[] = [
+const samples = [
   {
     id: "transit-bomber",
     name: "Transit Shell Bomber",
@@ -104,3 +90,37 @@ export const products: Product[] = [
     detail: "product-loopback-crew-detail.webp",
   },
 ];
+
+const palette: Record<string, string> = {
+  Black: "#242426",
+  Olive: "#61624b",
+  Bone: "#e9e4d8",
+  Slate: "#686966",
+  Indigo: "#303846",
+  Ash: "#b7b6b2",
+  Sand: "#b5a284",
+  Charcoal: "#4e4d4a",
+  Oxblood: "#682c35",
+};
+const categories = ["T-shirts", "Pants", "Hoodies", "Jackets"];
+export const demoProducts = samples.map((p) => ({
+  ...p,
+  categoryPosition: categories.indexOf(p.category),
+  colorways: p.colors.map((name, i) => {
+    const stem = "product-" + p.id + (i ? "-alt" : "");
+    return {
+      name,
+      hex: palette[name],
+      images: {
+        model: stem + ".webp",
+        detail: stem + "-detail.webp",
+        ...(!i ? { garment: "garment-" + p.id + ".webp" } : {}),
+      },
+      variants: ["S", "M", "L", "XL"].map((size) => ({
+        id: [p.id, name, size].join(":"),
+        size,
+        stock: 99,
+      })),
+    };
+  }),
+}));

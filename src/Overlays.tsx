@@ -1,11 +1,19 @@
 import { useState } from "react";
 import { Minus, Plus, Search, ShoppingBag, Trash2 } from "lucide-react";
 import { Dialog } from "./components";
-import { asset, money, itemKey, shopLink, type CartItem } from "./store";
-import { products } from "./products";
-import { variantPhoto } from "./ProductView";
+import {
+  asset,
+  money,
+  itemKey,
+  shopLink,
+  variantPhoto,
+  stockLimit,
+  type CartItem,
+} from "./store";
+import { useProducts } from "./CatalogSource";
 
 export function SearchPanel({ close }: { close: () => void }) {
+  const products = useProducts();
   const [term, setTerm] = useState("");
   const matches = products.filter((p) =>
     [p.name, p.category, ...p.colors]
@@ -74,8 +82,11 @@ export function BagPanel({
   change: (key: string, n: number) => void;
   close: () => void;
 }) {
+  const products = useProducts();
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const valid = items.every((i) => i.qty <= stockLimit(byId.get(i.id), i));
   const total = items.reduce(
-    (acc, i) => acc + products.find((p) => p.id === i.id)!.price * i.qty,
+    (sum, i) => sum + (byId.get(i.id)?.price ?? 0) * i.qty,
     0,
   );
   return (
@@ -84,8 +95,21 @@ export function BagPanel({
         <>
           <div className="bag-lines">
             {items.map((i) => {
-              const p = products.find((p) => p.id === i.id)!,
+              const p = byId.get(i.id),
                 key = itemKey(i);
+              const limit = stockLimit(p, i);
+              if (!p || !limit)
+                return (
+                  <div className="bag-item" key={key}>
+                    <div>
+                      <strong>{p?.name ?? i.id}</strong>
+                      <small>
+                        {i.color} / {i.size} · Unavailable
+                      </small>
+                    </div>
+                    <button onClick={() => change(key, 0)}>Remove</button>
+                  </div>
+                );
               return (
                 <div
                   className={
@@ -112,6 +136,7 @@ export function BagPanel({
                       {i.color} / {i.size}
                     </small>
                     <span>{money(p.price)}</span>
+                    {i.qty >= limit && <small>{limit} available</small>}
                     <div className="qty">
                       <button
                         disabled={i.qty === 1}
@@ -122,7 +147,7 @@ export function BagPanel({
                       </button>
                       <output aria-label="Quantity">{i.qty}</output>
                       <button
-                        disabled={i.qty >= 99}
+                        disabled={i.qty >= limit}
                         aria-label={"Increase quantity of " + p.name}
                         onClick={() => change(key, i.qty + 1)}
                       >
@@ -144,11 +169,11 @@ export function BagPanel({
           <div className="bag-total">
             <div>
               <strong>Subtotal</strong>
-              <strong>{money(total)}</strong>
+              <strong>{valid ? money(total) : "Review availability"}</strong>
             </div>
             <p>
-              This is a demo bag. Checkout and order fulfillment are
-              unavailable.
+              Your bag is saved on this device. Checkout and order fulfillment
+              are unavailable.
             </p>
             <button className="btn dark" onClick={close}>
               Continue browsing

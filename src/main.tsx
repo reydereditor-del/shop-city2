@@ -8,8 +8,14 @@ import { Home, Logo, Dialog } from "./components";
 import { Catalog } from "./Catalog";
 import { ProductView } from "./ProductView";
 import { SearchPanel, BagPanel } from "./Overlays";
-import { products } from "./products";
-import { readBag, storageKey, itemKey, type CartItem } from "./store";
+import { useProducts, CatalogSource, demoMode } from "./CatalogSource";
+import {
+  stockLimit,
+  readBag,
+  storageKey,
+  itemKey,
+  type CartItem,
+} from "./store";
 
 const navigation = [
   ["Shop all", "#/shop"],
@@ -18,6 +24,7 @@ const navigation = [
   ["Sale", "#/shop?sale=1"],
 ];
 function App() {
+  const products = useProducts();
   const [route, setRoute] = useState(location.hash.slice(1) || "/");
   const [panel, setPanel] = useState<null | "bag" | "menu" | "search">(null);
   const [items, setItems] = useState<CartItem[]>(readBag);
@@ -89,10 +96,20 @@ function App() {
   function add(item: CartItem) {
     const key = itemKey(item),
       existing = items.find((i) => itemKey(i) === key);
+    const limit = stockLimit(
+      products.find((p) => p.id === item.id),
+      item,
+    );
+    if (!limit) return;
+    if (existing && existing.qty >= limit) {
+      setAddedKey(null);
+      setPanel("bag");
+      return;
+    }
     save(
       existing
         ? items.map((i) =>
-            itemKey(i) === key ? { ...i, qty: Math.min(99, i.qty + 1) } : i,
+            itemKey(i) === key ? { ...i, qty: Math.min(limit, i.qty + 1) } : i,
           )
         : [...items, item],
     );
@@ -182,7 +199,9 @@ function App() {
           <span>Tashkent, Uzbekistan</span>
         </div>
         <p>
-          Storefront demo · Fictional products and sample prices in UZS.
+          {demoMode
+            ? "Storefront demo · Fictional products and sample prices in UZS."
+            : "Shop City catalog · Prices in UZS."}
           <br />
           Payments and order fulfillment are unavailable.
         </p>
@@ -221,6 +240,8 @@ function App() {
 }
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <CatalogSource>
+      <App />
+    </CatalogSource>
   </StrictMode>,
 );
