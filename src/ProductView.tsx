@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ShoppingBag } from "lucide-react";
 import { Price, ProductCard } from "./components";
 import { products } from "./products";
@@ -18,6 +18,42 @@ export const variantPhoto = (p: Product, color: string, detail = false) =>
       ? p.detail
       : p.image
     : "product-" + p.id + "-alt" + (detail ? "-detail" : "") + ".webp";
+function GalleryPhoto({
+  file,
+  description,
+}: {
+  file: string;
+  description: string;
+}) {
+  const [frame, setFrame] = useState({ file, description, previous: "" });
+  useEffect(() => {
+    if (file === frame.file) return;
+    let cancelled = false;
+    const next = new Image();
+    next.src = asset(file);
+    // Keep the previous photo visible while the requested color or detail decodes.
+    const show = () => {
+      if (!cancelled) setFrame({ file, description, previous: frame.file });
+    };
+    next.decode().then(show, show);
+    return () => {
+      cancelled = true;
+    };
+  }, [file, description, frame.file]);
+  return (
+    <>
+      {frame.previous && (
+        <img className="gallery-underlay" src={asset(frame.previous)} alt="" />
+      )}
+      <img
+        className={frame.previous ? "gallery-incoming" : undefined}
+        key={frame.file}
+        src={asset(frame.file)}
+        alt={frame.description}
+      />
+    </>
+  );
+}
 export function ProductView({
   p,
   add,
@@ -46,10 +82,9 @@ export function ProductView({
       <div className="pdp">
         <div className="gallery">
           <figure className="main-photo">
-            <img
-              key={selected.file}
-              src={asset(selected.file)}
-              alt={
+            <GalleryPhoto
+              file={selected.file}
+              description={
                 p.name + " in " + color + ", " + selected.label.toLowerCase()
               }
             />
